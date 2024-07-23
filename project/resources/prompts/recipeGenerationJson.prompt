@@ -1,0 +1,46 @@
+Génère la recette de cuisine {diet_type} nommé "{recipe_name}" avec les champs suivants:
+Titre
+Description
+Temps de préparation
+Temps de cuisson
+Portions
+Calories
+Protéines
+Glucides
+Lipides
+Ingrédients (nom, quantité, unité et categorie)
+Instructions
+Régime ( végétarien, vegetalien, paleo, keto, sans gluten, sans lactose, flexitarien)
+
+Le format de sortie un JSON, voici un exemple de sortie attendue:
+{
+    "title": "Salade de Quinoa et Avocat",
+    "description": "Une salade légère et nutritive à base de quinoa et d'avocat.",
+    "prepTime": 15,
+    "cookTime": 15,
+    "servings": 2,
+    "calories": 350,
+    "protein": 8,
+    "carbohydrates": 30,
+    "fat": 22,
+    "ingredients": [
+        {"name": "Quinoa", "quantity": 1, "unit": "tasse", category:"Céréale"},
+        {"Name": "Eau", "Quantity": 2, "unit": "tasses"},
+        {"Name": "Avocat", "Quantity": 1, category:"Fruit"},
+        {"Name": "Tomates cerises", "Quantity": 0.5, "unit": "tasse", category:"Légume"},
+        {"Name": "Concombre", "Quantity": 0.5, "unit": "tasse", category:"Légume"},
+        {"Name": "Jus de citron", "Quantity": 2, "unit": "cuillères à soupe", category:"Fruit"},
+        {"Name": "Sel", "Quantity": 1, "unit": "pincée", category:"Épices"},
+        {"Name": "Poivre", "Quantity": 1, "unit": "pincée", category:"Épices"}
+    ],
+    "instructions": [
+        "Rincer le quinoa sous l'eau froide.",
+        "Porter l'eau à ébullition, ajouter le quinoa et cuire pendant 15 minutes.",
+        "Égoutter et laisser refroidir.",
+        "Couper l'avocat, les tomates cerises et le concombre en petits morceaux.",
+        "Mélanger le quinoa refroidi avec les légumes coupés.",
+        "Assaisonner avec le jus de citron, le sel et le poivre.",
+        "Servir frais."
+    ],
+    "diet": "Végétarien"
+}
