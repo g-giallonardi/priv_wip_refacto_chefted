@@ -82,6 +82,8 @@ class User(db.Model):
     dietaryPreference = db.Column(db.String, server_default='flex')
     allergies = db.Column(db.ARRAY(db.String))
     goals = db.Column(db.Integer)
+    tokenCount = db.Column(db.Integer, default=10, nullable=False)
+    lastTokenReset = db.Column(db.DateTime, server_default=func.now())
     joinDate = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     def __repr__(self):
@@ -97,6 +99,7 @@ class User(db.Model):
         d = Serializer.serialize(self)
         del d['password_hash']
         del d['joinDate']
+        del d['lastTokenReset']
         d['birthdate'] = d['birthdate'].isoformat()
         return d
 

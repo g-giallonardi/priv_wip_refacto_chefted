@@ -11,7 +11,7 @@ from openai import OpenAI
 from project.utils.IngredientManager import IngredientManager
 from project.utils.RecipeManager import RecipeManager
 from project.utils.UserManager import UserManager
-from project.utils.decorator import token_required, log_endpoint_access
+from project.utils.decorator import token_required, log_endpoint_access, pay_action_cost
 
 load_dotenv()
 
@@ -69,7 +69,6 @@ def handle_generate_recipe():
 @token_required
 def handle_get_recipes_by_diet():
     diet = request.args.get('filter')
-    print(diet)
     recipe_mgt = RecipeManager()
     recipes = recipe_mgt.list_recipe_by_diet(diet)
     return recipes
@@ -138,6 +137,7 @@ def handle_add_user() -> Response:
 @app.route('/meal/generate')
 @token_required
 @log_endpoint_access
+@pay_action_cost(cost=2)
 def handle_generate_meal(current_user: User, args: dict) -> Response:
     """
     :param current_user: The current user, of type User, who is requesting to generate a meal.

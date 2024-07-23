@@ -5,7 +5,8 @@
 - [X] Generation d'un menu avec prise en compte des allergies
 - [X] Duplication de recette si pas assez pour faire la semaine
 - [X] Gestion du JWT pour l'auth
-- [ ] Utilisation de jetons limité pour les action (et gerer le mode unlimited)
+- [X] Utilisation de jetons limité pour les action
+- [ ] Gerer le mode jetons illimité
 - [ ] Enregistrement des menu en base
 - [X] Logging des actions
 

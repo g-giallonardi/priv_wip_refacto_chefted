@@ -7,6 +7,71 @@ from project.database.models import User
 
 
 class UserManager:
+    """
+    Class UserManager
+
+    The UserManager class provides functionality for managing user data and authentication.
+
+    Attributes:
+        SECRET_KEY (str): The secret key used for generating JWT tokens.
+
+    Methods:
+        __init__(self, app)
+            Initializes a new instance of the UserManager class.
+
+            Parameters:
+                app (object): The application object containing configuration.
+
+        isExist(self, email: str) -> float
+            Checks if a user with the specified email exists in the database.
+
+            Parameters:
+                email (str): The email address of the user to check.
+
+            Returns:
+                float: The user ID if the user exists, -1 otherwise.
+
+        login(self, user: dict)
+            Authenticates a user based on the provided credentials.
+
+            Parameters:
+                user (dict): A dictionary containing the user's email and password.
+
+            Returns:
+                tuple: A tuple containing a boolean indicating if the user was successfully authenticated and a dictionary
+                       containing the authenticated user's data and JWT token if authentication was successful, otherwise an
+                       empty dictionary.
+
+        add_user(self, user: dict)
+            Adds a new user to the database.
+
+            Parameters:
+                user (dict): A dictionary containing the user's data including email, password, and other optional fields.
+
+            Returns:
+                object/int: If the user is successfully added, it returns a serialized representation of the added user.
+                            If a user with the same email already exists, it returns the HTTP status code 409 indicating a
+                            conflict.
+
+        generate_token(self, user_id: int) -> str
+            Generates a JWT token for the specified user ID.
+
+            Parameters:
+                user_id (int): The ID of the user.
+
+            Returns:
+                str: The generated JWT token.
+
+        decode_token(self, token)
+            Decodes the provided JWT token and retrieves the user ID.
+
+            Parameters:
+                token (str): The JWT token to decode.
+
+            Returns:
+                str: The decoded user ID if the token is valid, otherwise an error message indicating the reason for the
+                     invalid token.
+    """
     def __init__(self, app):
         self.SECRET_KEY = app.config['SECRET_KEY']
         pass
@@ -34,6 +99,7 @@ class UserManager:
     def add_user(self, user: dict):
         user_to_save = user.copy()
         del user_to_save['password']
+        user_to_save['tokenCount'] = 10
         user['user_id'] = self.isExist(user_to_save.get('email'))
         if user['user_id'] == -1:
             new_user = User(**user_to_save)
