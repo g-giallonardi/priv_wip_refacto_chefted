@@ -60,12 +60,9 @@ def test_generate_meal(client,authentication_header, user_diet,user_allergies):
         check_generate_meal_diet(meal_plan, user_diet)
     check_generate_meal_allergens(meal_plan, user_allergies)
 
-def test_login_user(client,user,user_good_password, user_bad_password):
-    #Test with bad credentials => 401
-    response = client.post('/user/login', json={'email': user.email, 'password': user_bad_password})
-    assert response.status_code == 401
 
-    #Test with good credentials => 200
+@pytest.mark.dev
+def test_login_user(client,user,user_good_password):
     response = client.post('/user/login', json={'email': user.email, 'password': user_good_password})
     assert response.status_code == 200
     data = json.loads(response.data)
@@ -75,12 +72,17 @@ def test_login_user(client,user,user_good_password, user_bad_password):
     assert data['email'] == user.email
 
 
+@pytest.mark.dev
+def test_bad_login_user(client,user, user_bad_password):
+    response = client.post('/user/login', json={'email': user.email, 'password': user_bad_password})
+    assert response.status_code == 401
+
+
 def assign_token(user,token_count):
     user_db = User.query.get(user.user_id)
     user_db.tokenCount = token_count
     db.session.commit()
 
-@pytest.mark.dev
 def test_use_action_token(client,authentication_header, user):
     TEST_ACTION_TOKEN_COUNT = 10
     current_token_count = user.tokenCount
@@ -95,7 +97,6 @@ def test_use_action_token(client,authentication_header, user):
     #reset count
     assign_token(user, current_token_count)
 
-@pytest.mark.dev
 def test_no_more_action_token(client,authentication_header, user):
     current_token_count = user.tokenCount
 
