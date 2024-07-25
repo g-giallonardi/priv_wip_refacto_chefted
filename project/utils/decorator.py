@@ -77,7 +77,8 @@ def log_endpoint_access(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         args_repr = [a for a in args]
-        endpoint_data = request.json if request.method != "GET" else None
+
+        endpoint_data = request.json if request.method != "GET" else {}
         log_data = {
             'user': args_repr[0],
             'url': request.url,
@@ -89,14 +90,14 @@ def log_endpoint_access(f):
         for k, v in kwargs.items():
             kwargs_dict[k] = v
 
+        kwargs_dict.update(endpoint_data)
         try:
             result = f(args_repr[0], kwargs_dict)
             result_data = result.data
             log_data["status_code"] = json.dumps(result.status_code)
         except Exception as e:
-            print(e)
-            logging.error(e)
-            result_data = {'error':500}
+            logging.exception(e)
+            result_data = {'error': 500}
             log_data["status_code"] = 500
 
         new_log = Log(**log_data)
@@ -111,37 +112,38 @@ def log_endpoint_access(f):
     return decorated
 
 def pay_action_cost(cost):
-    """
-    :param cost: The cost of the action that needs to be paid.
-    :return: A decorator function that can be used to add functionality to the decorated function.
 
-    This method is a decorator function that adds the ability to pay the cost of an action before executing the decorated function. It checks if the user has enough tokens to cover the cost
-    * of the action and deducts the cost from the user's token count if they do. If the user does not have enough tokens, it returns an error response.
-
-    Example usage:
-
-    @pay_action_cost(10)
-    def perform_action(user_id):
-        # Code to perform the action
-        pass
-
-    In this example, the `perform_action` function will only be executed if the user has at least 10 tokens. If they don't, an error response will be returned instead.
-    """
     def decorator(func):
-        def wrapper(*args, **kwargs):
-            # Pre-decoration logic
+        @wraps(func)
+        def wrapper_pay_action_cost(*args, **kwargs):
             sign_user = args[0]
             user = User.query.filter(User.user_id == sign_user.user_id).first()
+            if user is None:
+                return Response(
+                    json.dumps({'error': 'User does not exist'}), status=404, mimetype='application/json'
+                )
             current_token = user.tokenCount
             if current_token >= cost:
+                # Pre-decoration logic
                 user.tokenCount -= cost
-                db.session.commit()
+                result = func(*args, **kwargs)
+                # try:
+                #     result = func(*args, **kwargs)
+                # except Exception as e:
+                #     db.session().rollback()
+                #     logging.error(e)
+                #     return Response(
+                #         json.dumps({'error': 'An error occurred: {}'.format(str(e))}),
+                #         status=500,
+                #         mimetype='application/json'
+                #     )
+                # else:
+                #     # Post-decoration logic
+                #     db.session.commit()
+                return result
             else:
                 return Response(
-                    {'error':'No more action token available'}, status=403, mimetype='application/json'
+                    json.dumps({'error':'No more action token available'}), status=403, mimetype='application/json'
                 )
-            # result = args(*args, **kwargs)
-            # # Post-decoration logic
-            return func(*args, **kwargs)
-        return wrapper
+        return wrapper_pay_action_cost
     return decorator

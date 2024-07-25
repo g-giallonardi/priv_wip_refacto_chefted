@@ -36,6 +36,46 @@ class Recipe(db.Model, Serializer):
         d = Serializer.serialize(self)
         return d
 
+
+class MealPlans(db.Model, Serializer):
+    __tablename__ = 'meal_plans'
+
+    meal_plan_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('user.user_id'), nullable=False, index=True)
+    user = db.relationship('User', foreign_keys=[user_id])
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+
+    def __repr__(self):
+        return f"<MealPlan(meal_plan_id='{self.meal_plan_id}'>"
+
+    def serialize(self):
+        d = Serializer.serialize(self)
+        d['start_date'] = d['start_date'].isoformat()
+        d['end_date'] = d['end_date'].isoformat()
+        return d
+
+
+class MealPlanRecipe(db.Model, Serializer):
+    __tablename__ = 'meal_plans_recipe_relations'
+
+    meal_plans_recipe_relation_id = db.Column(db.Integer, primary_key=True)
+    meal_plan_id = db.Column(db.Integer, ForeignKey('meal_plans.meal_plan_id'), nullable=False, index=True)
+    meal_plan = db.relationship('MealPlans', foreign_keys=[meal_plan_id])
+    recipe_id = db.Column(db.Integer, ForeignKey('recipe.recipe_id'), nullable=False, index=True)
+    recipe = db.relationship('Recipe', foreign_keys=[recipe_id])
+    mealType = db.Column(db.String(50))
+    date = db.Column(db.Date, nullable=False)
+
+    def __repr__(self):
+        return f"<MealPlanRecipe(meal_plan_id='{self.meal_plan_id}', recipe_id='{self.recipe_id}')>"
+
+    def serialize(self):
+        d = Serializer.serialize(self)
+        d['date'] = d['date'].isoformat()
+        return d
+
+
 class Ingredient(db.Model):
     __tablename__ = 'ingredient'
 

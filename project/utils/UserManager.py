@@ -118,6 +118,10 @@ class UserManager:
         }
         return jwt.encode(payload, self.SECRET_KEY, algorithm='HS256')
 
+    def get_current_user(self, user_id) -> User:
+        return User.query.get(user_id)
+
+
     @staticmethod
     def decode_token(self, token):
         try:

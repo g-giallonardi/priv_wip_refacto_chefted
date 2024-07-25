@@ -87,7 +87,6 @@ def handle_get_recipe(current_user: User, args: dict) -> Response:
     """
     recipe_mgt = RecipeManager()
     recipe = recipe_mgt.get_recipe_by_id(args['recipe_id'])
-    print(recipe)
     return Response(
         json.dumps(recipe), status=200, mimetype='application/json'
     )
@@ -134,7 +133,7 @@ def handle_add_user() -> Response:
             json.dumps(user), status=201,mimetype='application/json'
         )
 
-@app.route('/meal/generate')
+@app.route('/meal/generate', methods=['GET'])
 @token_required
 @log_endpoint_access
 @pay_action_cost(cost=2)
@@ -156,7 +155,7 @@ def handle_generate_meal(current_user: User, args: dict) -> Response:
     """
     generated_meal = []
     recipe_mgt = RecipeManager()
-    recipes = recipe_mgt.generate_meal(current_user.dietaryPreference, current_user.allergies)
+    recipes = recipe_mgt.generate_meal(current_user)
 
     for recipe in recipes:
         generated_meal.append(recipe)
@@ -164,10 +163,42 @@ def handle_generate_meal(current_user: User, args: dict) -> Response:
         json.dumps(generated_meal), status=200, mimetype='application/json'
     )
 
+@app.route('/meal/plan', methods=['GET'])
+@token_required
+@log_endpoint_access
+def handle_get_current_meal_plan(current_user: User, args: dict) -> Response:
+    recipe_mgt = RecipeManager()
+    user_mgt = UserManager(app)
+    current_user = user_mgt.get_current_user(current_user.user_id)
+    current_meal_plan = recipe_mgt.get_current_meal_plan(current_user)
+    return Response(
+        json.dumps(current_meal_plan), status=200, mimetype='application/json'
+    )
+@app.route('/meal/swap', methods=['POST'])
+@token_required
+@log_endpoint_access
+@pay_action_cost(cost=2)
+def handle_swap_recipe_in_meal(current_user: User, args: dict) -> Response:
+    recipe_id_to_swap = args['recipe_id']
+    date_to_act = args['date']
 
+    recipe_mgt = RecipeManager()
+    user_mgt = UserManager(app)
+
+    current_user = user_mgt.get_current_user(current_user.user_id)
+
+    new_meal_plan = recipe_mgt.swap_recipe(recipe_id_to_swap,date_to_act, current_user)
+
+    return Response(
+        json.dumps(new_meal_plan), status=200, mimetype='application/json'
+    )
 
 @app.errorhandler(404)
 def page_not_found(e:Exception) -> Response:
+    """
+    :param e: The exception object that caused the 404 error.
+    :return: A Response object with the error message and status code 404.
+    """
     return Response(
         f'{request.path} - Not found', status=404
     )
