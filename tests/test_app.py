@@ -14,6 +14,18 @@ def test_no_route_endpoint(client):
     assert response.status_code == 405
     assert response.data == b"Method not allowed"
 
+@pytest.mark.dev
+def test_get_current_user(client,user, authentication_header):
+    endpoint = '/user/me'
+    user_id = user.user_id
+
+    response = client.get(endpoint, headers=authentication_header)
+    current_user = json.loads(response.data)
+
+    assert response.status_code == 200
+    assert isinstance(current_user, dict)
+    assert user_id == current_user['user_id']
+
 def test_generate_log(client,user, authentication_header):
     endpoint = '/meal/generate'
     response = client.get(endpoint, headers=authentication_header)
@@ -154,7 +166,7 @@ def test_get_specific_recipe(client, user, authentication_header):
     # reset count
     assign_token(user, current_token_count)
 
-@pytest.mark.dev
+
 def test_swap_recipe_in_meal_plan(client, user, authentication_header):
     current_token_count = user.tokenCount
     assign_token(user, 10)

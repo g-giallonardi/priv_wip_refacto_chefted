@@ -66,6 +66,16 @@ def handle_generate_recipe():
 
     return list(recipes)
 
+@app.route('/user/me', methods=['GET'])
+@token_required
+def handle_get_current_user(current_user: User):
+
+    userMgt = UserManager(app)
+    user = userMgt.get_current_user(current_user.user_id).serialize()
+
+    return Response(
+        json.dumps(user), status=200, mimetype='application/json'
+    )
 
 @app.route('/recipe/diet', methods=['GET'])
 @token_required
