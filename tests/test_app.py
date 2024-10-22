@@ -17,14 +17,13 @@ def test_no_route_endpoint(client):
 @pytest.mark.dev
 def test_get_current_user(client,user, authentication_header):
     endpoint = '/user/me'
-    user_id = user.user_id
 
     response = client.get(endpoint, headers=authentication_header)
     current_user = json.loads(response.data)
 
     assert response.status_code == 200
     assert isinstance(current_user, dict)
-    assert user_id == current_user['user_id']
+    assert user.serialize() == current_user
 
 def test_generate_log(client,user, authentication_header):
     endpoint = '/meal/generate'
