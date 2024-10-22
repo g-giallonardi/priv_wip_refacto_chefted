@@ -19,15 +19,21 @@ def token_required(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+
         token = None
         if "Authorization" in request.headers:
-            token = request.headers["Authorization"].split(" ")[1]
+            try:
+                token = request.headers["Authorization"].split(" ")[1]
+            except Exception as e:
+                token = None
+
         if not token:
             return {
                 "message": "Authentication Token is missing!",
                 "data": None,
                 "error": "Unauthorized"
             }, 401
+
         try:
             data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
             current_user = User.query.filter_by(user_id=data["user_id"]).first()
@@ -37,6 +43,7 @@ def token_required(f):
                     "data": None,
                     "error": "Unauthorized"
                 }, 401
+
         except Exception as e:
             print(e)
             logging.error(e)
@@ -77,7 +84,6 @@ def log_endpoint_access(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         args_repr = [a for a in args]
-
         endpoint_data = request.json if request.method != "GET" else {}
         log_data = {
             'user': args_repr[0],
@@ -116,6 +122,7 @@ def pay_action_cost(cost):
     def decorator(func):
         @wraps(func)
         def wrapper_pay_action_cost(*args, **kwargs):
+
             sign_user = args[0]
             user = User.query.filter(User.user_id == sign_user.user_id).first()
             if user is None:
@@ -124,23 +131,9 @@ def pay_action_cost(cost):
                 )
             current_token = user.tokenCount
             if current_token >= cost:
-                # Pre-decoration logic
                 user.tokenCount -= cost
-                result = func(*args, **kwargs)
-                # try:
-                #     result = func(*args, **kwargs)
-                # except Exception as e:
-                #     db.session().rollback()
-                #     logging.error(e)
-                #     return Response(
-                #         json.dumps({'error': 'An error occurred: {}'.format(str(e))}),
-                #         status=500,
-                #         mimetype='application/json'
-                #     )
-                # else:
-                #     # Post-decoration logic
-                #     db.session.commit()
-                return result
+
+                return func(*args, **kwargs)
             else:
                 return Response(
                     json.dumps({'error':'No more action token available'}), status=403, mimetype='application/json'

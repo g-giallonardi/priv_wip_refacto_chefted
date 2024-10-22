@@ -154,7 +154,6 @@ def test_get_specific_recipe(client, user, authentication_header):
     # reset count
     assign_token(user, current_token_count)
 
-
 @pytest.mark.dev
 def test_swap_recipe_in_meal_plan(client, user, authentication_header):
     current_token_count = user.tokenCount
@@ -164,6 +163,7 @@ def test_swap_recipe_in_meal_plan(client, user, authentication_header):
     response = client.get('/meal/plan', headers=authentication_header)
     assert response.status_code == 200
     meal_plan = json.loads(response.data)
+    assert len(meal_plan) > 0
     current_recipe_ids = []
     for day in meal_plan:
         for meal in day:

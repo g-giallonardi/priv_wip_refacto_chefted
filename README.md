@@ -5,6 +5,8 @@
 - [X] Duplication de recette si pas assez pour faire la semaine
 - [X] Changer une recette du menu 
 - [X] Enregistrement des menu en base
+- [ ] ~~Erreur si pas de planning pour la semaine en cours~~ 
+
 
 ### Recipe
 - [X] Get une recette particuliere
@@ -25,3 +27,5 @@
 - [ ] Consolider les categories d'aliments
 - [ ] Uniformiser les types diet sur les recettes
 - [ ] Corriger le tag BREAKFAST sur les recettes
+
+

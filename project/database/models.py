@@ -18,6 +18,7 @@ class Recipe(db.Model, Serializer):
     recipe_id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
     description = db.Column(db.String(255))
+    imageURI = db.Column(db.String())
     diet = db.Column(db.String(50))
     servings = db.Column(db.Integer())
     prepTime = db.Column(db.Integer())
@@ -157,3 +158,23 @@ class Log(db.Model):
 
     def __repr__(self):
         return f"<Log(id='{self.log_id}', user='{self.user_id}')>"
+
+class ShoppingLists(db.Model):
+    __tablename__ = 'shopping_lists'
+
+    shopping_list_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('user.user_id'), nullable=False, index=True)
+    user = db.relationship('User', foreign_keys=[user_id])
+    last_update = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+
+class ShoppingListItem(db.Model):
+    __tablename__ = 'recipe_shopping_list_relations'
+
+    shopping_list_item_id = db.Column(db.Integer, primary_key=True)
+    shopping_list_id = db.Column(db.Integer, ForeignKey('shopping_lists.shopping_list_id'), nullable=False, index=True)
+    shopping_list = db.relationship('ShoppingLists', foreign_keys=[shopping_list_id])
+    ingredient_id = db.Column(db.Integer, ForeignKey('ingredient.ingredient_id'), nullable=False, index=True)
+    ingredient = db.relationship('Ingredient', foreign_keys=[ingredient_id])
+    quantity = db.Column(db.Float)
+    unit = db.Column(db.String(50))

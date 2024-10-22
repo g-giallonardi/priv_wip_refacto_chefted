@@ -3,6 +3,7 @@ import os
 
 from flask import request, Response
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 from project.database.models import User
 from project import create_app
@@ -16,6 +17,7 @@ from project.utils.decorator import token_required, log_endpoint_access, pay_act
 load_dotenv()
 
 app = create_app(os.getenv('SQLALCHEMY_DATABASE_URI', None))
+CORS(app)
 @app.route('/')
 def hello_world():
     return Response(
@@ -133,10 +135,10 @@ def handle_add_user() -> Response:
             json.dumps(user), status=201,mimetype='application/json'
         )
 
-@app.route('/meal/generate', methods=['GET'])
+@app.route('/meal/generate', methods=['POST'])
 @token_required
 @log_endpoint_access
-@pay_action_cost(cost=2)
+@pay_action_cost(cost=0)
 def handle_generate_meal(current_user: User, args: dict) -> Response:
     """
     :param current_user: The current user, of type User, who is requesting to generate a meal.
@@ -153,9 +155,10 @@ def handle_generate_meal(current_user: User, args: dict) -> Response:
         response = handle_generate_meal(current_user, args)
 
     """
+    start_date = args['start_date']
     generated_meal = []
     recipe_mgt = RecipeManager()
-    recipes = recipe_mgt.generate_meal(current_user)
+    recipes = recipe_mgt.generate_meal(current_user, start_date)
 
     for recipe in recipes:
         generated_meal.append(recipe)
@@ -163,21 +166,25 @@ def handle_generate_meal(current_user: User, args: dict) -> Response:
         json.dumps(generated_meal), status=200, mimetype='application/json'
     )
 
-@app.route('/meal/plan', methods=['GET'])
+@app.route('/meal/plan', methods=['POST'])
 @token_required
 @log_endpoint_access
 def handle_get_current_meal_plan(current_user: User, args: dict) -> Response:
     recipe_mgt = RecipeManager()
     user_mgt = UserManager(app)
     current_user = user_mgt.get_current_user(current_user.user_id)
-    current_meal_plan = recipe_mgt.get_current_meal_plan(current_user)
+    current_meal_plan = recipe_mgt.get_current_meal_plan(current_user,args)
+
+    data_to_send = current_meal_plan
+    if data_to_send is None:
+        data_to_send = []
     return Response(
-        json.dumps(current_meal_plan), status=200, mimetype='application/json'
+        json.dumps(data_to_send), status=200, mimetype='application/json'
     )
 @app.route('/meal/swap', methods=['POST'])
 @token_required
 @log_endpoint_access
-@pay_action_cost(cost=2)
+@pay_action_cost(cost=0)
 def handle_swap_recipe_in_meal(current_user: User, args: dict) -> Response:
     recipe_id_to_swap = args['recipe_id']
     date_to_act = args['date']
@@ -187,11 +194,17 @@ def handle_swap_recipe_in_meal(current_user: User, args: dict) -> Response:
 
     current_user = user_mgt.get_current_user(current_user.user_id)
 
-    new_meal_plan = recipe_mgt.swap_recipe(recipe_id_to_swap,date_to_act, current_user)
+    recipe_mgt.swap_recipe(recipe_id_to_swap, date_to_act, current_user)
+    new_recipe = recipe_mgt._get_recipe_by_date(current_user, date_to_act)
 
-    return Response(
-        json.dumps(new_meal_plan), status=200, mimetype='application/json'
-    )
+    if new_recipe:
+        return Response(
+            json.dumps(new_recipe), status=200, mimetype='application/json'
+        )
+    else:
+        return Response(
+            "Recipe not found", status=404, mimetype='application/json'
+        )
 
 @app.errorhandler(404)
 def page_not_found(e:Exception) -> Response:
