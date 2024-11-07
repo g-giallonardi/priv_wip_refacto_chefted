@@ -43,6 +43,7 @@ class MealPlans(db.Model, Serializer):
 
     meal_plan_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, ForeignKey('user.user_id'), nullable=False, index=True)
+    name = db.Column(db.String(),default=func.extract('epoch', func.now()))
     user = db.relationship('User', foreign_keys=[user_id])
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)

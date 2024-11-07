@@ -3,7 +3,7 @@ from flask import request, Response
 import json
 from openai import OpenAI
 from project.utils.IngredientManager import IngredientManager
-from project.utils.RecipeManager import RecipeManager
+from project.utils.MealManager import RecipeManager
 from project.utils.UserManager import UserManager
 
 

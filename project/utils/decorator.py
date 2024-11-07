@@ -39,7 +39,7 @@ def token_required(f):
             current_user = User.query.filter_by(user_id=data["user_id"]).first()
             if current_user is None:
                 return {
-                    "message": "Invalid Authentication token!",
+                    "message": "Invalid authentication token",
                     "data": None,
                     "error": "Unauthorized"
                 }, 401

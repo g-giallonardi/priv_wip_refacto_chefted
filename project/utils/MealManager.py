@@ -2,6 +2,7 @@ from datetime import date, timedelta, datetime
 import random
 
 import math
+from flask import jsonify
 from sqlalchemy import func, and_
 
 from project.database.database import db
@@ -42,13 +43,19 @@ class RecipeManager:
             recipe['ingredients'].append(ingredient)
         return recipe
 
-    def list_recipe_by_diet(self, diet: str) -> [Recipe]:
-        recipe_objects = Recipe.query.filter_by(diet=diet).all()
-        recipes = []
-        for recipe_object in recipe_objects:
-            serialize_recipe = recipe_object.serialize()
-            recipes.append(serialize_recipe)
-        return recipes
+    def list_recipe_by_diet(self, diet: str, page_number: int) -> [Recipe]:
+        pagination = Recipe.query.filter_by(diet=diet).paginate(page=page_number, per_page=20, error_out=False)
+
+        return jsonify({
+            'recipes': [recipe.serialize() for recipe in pagination.items],  # `items` contient les résultats pour la page courante
+            'page': pagination.page,
+            'per_page': pagination.per_page,
+            'total': pagination.total,
+            'pages': pagination.pages,  # Nombre total de pages
+            'has_next': pagination.has_next,  # Indique s'il y a une page suivante
+            'has_prev': pagination.has_prev  # Indique s'il y a une page précédente
+        })
+
 
     def save_recipe(self, recipe: dict) -> int:
         recipe_to_save = recipe.copy()
@@ -62,7 +69,7 @@ class RecipeManager:
 
         return recipe['recipe_id']
 
-    def swap_recipe(self, current_recipe_id: int, date_to_act: str, current_user: User) -> list:
+    def swap_meal(self, current_recipe_id: int, date_to_act: str, current_user: User) -> list:
         """
         :param current_recipe_id: The ID of the current recipe to be swapped.
         :param date_to_act: The date on which the swap should be made.
@@ -99,34 +106,29 @@ class RecipeManager:
 
         return self.get_current_meal_plan(current_user, {"start": self._start_of_week(date_to_act)})
 
-    def _extract_allergen(self, ingredient) -> str:
-
-        allergen = ingredient.allergen
-        if allergen:
-            return allergen
-
-        return None
-
-    def _get_recipe_allergen(self, recipe_id) -> set:
+    def _extract_allergen(self, ingredients: list) -> str:
         allergens = set()
-
-        raw_recipe_ingredients = (RecipeIngredient.query
-                                  .join(Ingredient)
-                                  .filter(
-                                    RecipeIngredient.recipe_id == recipe_id).all())
-
-        for raw_recipe_ingredient in raw_recipe_ingredients:
-            allergen = self._extract_allergen(raw_recipe_ingredient.ingredient)
+        for ingredient in ingredients:
+            allergen = ingredient['allergen']
             if allergen:
                 allergens.add(allergen)
-
         return allergens
 
-    def format_meal_plan(self, recipe_list, start_date):
+    def _get_meal_ingredients(self, recipe_id: int) -> list:
+        recipe_ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe_id).all()
+        ingredients = []
 
-        def get_date_of_meal(day_idx):
-            day_date = start_date + timedelta(days=day_idx)
-            return day_date.strftime("%Y-%m-%d")
+        for recipe_ingredient in recipe_ingredients:
+            ingredient = recipe_ingredient.ingredient.serialize()
+            ingredient['quantity'] = recipe_ingredient.quantity
+            ingredient['unit'] = recipe_ingredient.unit
+
+            ingredients.append(ingredient)
+
+        allergens = list(self._extract_allergen(ingredients))
+        return ingredients, allergens
+
+    def _format_meal_plan(self, recipe_list, start_date):
 
         DAY_PLAN_SIZE: int = 2
 
@@ -135,12 +137,14 @@ class RecipeManager:
 
         day_idx: int = 0
 
+        def get_date_of_meal(day):
+            day_date = start_date + timedelta(days=day)
+            return day_date.strftime("%Y-%m-%d")
+
         for recipe in recipe_list:
-
-            recipe_id = recipe['recipe_id']
-
-            recipe['allergens'] = list(self._get_recipe_allergen(recipe_id))
             recipe['date'] = get_date_of_meal(day_idx)
+
+            recipe['ingredients'], recipe['allergens'] = self._get_meal_ingredients(recipe["recipe_id"])
 
             day_plan.append(recipe)
 
@@ -166,7 +170,7 @@ class RecipeManager:
         recipe_list = [meal_plan_recipe_relation.recipe.serialize() for meal_plan_recipe_relation in
                        meal_plan_recipe_relations]
 
-        return self.format_meal_plan(recipe_list, current_meal_plan.start_date)
+        return self._format_meal_plan(recipe_list, current_meal_plan.start_date)
 
     def generate_meal(self, current_user: User, start_date: str) -> list:
         MEAL_PLAN_SIZE = 14
@@ -193,7 +197,7 @@ class RecipeManager:
         recipes_id = {ingredient_relation.recipe_id for ingredient_relation in safe_ingredients}
         filter_condition = Recipe.recipe_id.in_(recipes_id)
 
-        if current_user.dietaryPreference.lower() != 'flex':
+        if current_user.dietaryPreference.lower() != 'flexitarian':
             filter_condition = and_(Recipe.diet.__eq__(current_user.dietaryPreference), filter_condition)
 
         random_recipes = query_recipes(filter_condition)
@@ -210,7 +214,7 @@ class RecipeManager:
             'end_date': end_date
         }
 
-        meal_plan = self.format_meal_plan(recipe_list_completed, start_date)
+        meal_plan = self._format_meal_plan(recipe_list_completed, start_date)
 
         meal_plan_obj = MealPlans.query.filter(
             and_(MealPlans.user_id == current_user.user_id, MealPlans.start_date == start_date)).first()

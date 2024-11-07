@@ -10,7 +10,6 @@ from project.database.models import User
 
 load_dotenv()
 
-
 @pytest.fixture
 def client():
     with app.test_client() as client:

@@ -10,7 +10,7 @@ from project import create_app
 from openai import OpenAI
 
 from project.utils.IngredientManager import IngredientManager
-from project.utils.RecipeManager import RecipeManager
+from project.utils.MealManager import RecipeManager
 from project.utils.UserManager import UserManager
 from project.utils.decorator import token_required, log_endpoint_access, pay_action_cost
 
@@ -77,15 +77,16 @@ def handle_get_current_user(current_user: User):
         json.dumps(user), status=200, mimetype='application/json'
     )
 
-@app.route('/recipe/diet', methods=['GET'])
+@app.route('/recipe/diet/page/<page_number>', methods=['GET'])
 @token_required
-def handle_get_recipes_by_diet():
-    diet = request.args.get('filter')
+@log_endpoint_access
+def handle_get_recipes_by_diet(current_user: User, args: dict) -> list:
+    print(args)
+    page_number = int(args['page_number'])
     recipe_mgt = RecipeManager()
-    recipes = recipe_mgt.list_recipe_by_diet(diet)
+    recipes = recipe_mgt.list_recipe_by_diet(current_user.dietaryPreference, page_number)
     return recipes
 
-    # list_recipe_by_diet
 @app.route('/recipe/id/<recipe_id>', methods=['GET'])
 @token_required
 @log_endpoint_access
@@ -135,7 +136,7 @@ def handle_add_user() -> Response:
     user_data = request.get_json()
     user_mgt = UserManager(app)
     user = user_mgt.add_user(user_data)
-    print(user)
+
     if user == 409:
         return Response(
             "Email already registered", status=409
@@ -185,6 +186,8 @@ def handle_get_current_meal_plan(current_user: User, args: dict) -> Response:
     current_user = user_mgt.get_current_user(current_user.user_id)
     current_meal_plan = recipe_mgt.get_current_meal_plan(current_user,args)
 
+    print(current_meal_plan)
+
     data_to_send = current_meal_plan
     if data_to_send is None:
         data_to_send = []
@@ -204,7 +207,7 @@ def handle_swap_recipe_in_meal(current_user: User, args: dict) -> Response:
 
     current_user = user_mgt.get_current_user(current_user.user_id)
 
-    recipe_mgt.swap_recipe(recipe_id_to_swap, date_to_act, current_user)
+    recipe_mgt.swap_meal(recipe_id_to_swap, date_to_act, current_user)
     new_recipe = recipe_mgt._get_recipe_by_date(current_user, date_to_act)
 
     if new_recipe:

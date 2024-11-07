@@ -14,7 +14,6 @@ def test_no_route_endpoint(client):
     assert response.status_code == 405
     assert response.data == b"Method not allowed"
 
-@pytest.mark.dev
 def test_get_current_user(client,user, authentication_header):
     endpoint = '/user/me'
 
@@ -198,3 +197,19 @@ def test_swap_recipe_in_meal_plan(client, user, authentication_header):
 
     # reset count
     assign_token(user, current_token_count)
+
+
+@pytest.mark.dev
+def test_get_recipe_list(client, user, authentication_header):
+    response = client.get('http://127.0.0.1:5000/recipe/diet/page/1', headers=authentication_header)
+    assert response.status_code == 200
+
+    response_data = json.loads(response.data)
+    assert isinstance(response_data['recipes'], list)
+    assert len(response_data['recipes']) > 0
+
+    max_page = str(response_data['pages'])
+    response = client.get('http://127.0.0.1:5000/recipe/diet/page/'+max_page, headers=authentication_header)
+    response_data = json.loads(response.data)
+    assert response.status_code == 200
+    assert response_data['has_next'] is False
